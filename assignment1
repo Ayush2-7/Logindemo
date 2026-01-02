@@ -1,0 +1,127 @@
+login.jsp
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login</title>
+    <style>
+        body { font-family: 'Segoe UI', Arial; background: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .login-card { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 300px; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background: #1877f2; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        .error { color: #d32f2f; font-size: 14px; margin-bottom: 10px; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <h2 style="text-align: center;">Login</h2>
+        
+        <% String err = (String) request.getAttribute("error"); 
+           if(err != null) { %>
+            <div class="error"><%= err %></div>
+        <% } %>
+
+        <form action="login" method="post">
+            <input type="text" name="username" placeholder="Username (admin)" required>
+            <input type="password" name="password" placeholder="Password (1234)" required>
+            <button type="submit">Login</button>
+        </form>
+    </div>
+</body>
+</html>
+
+
+LoginServlet.java
+package com.demo;
+
+import java.io.IOException;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+
+@WebServlet("/login")
+public class LoginServlet extends HttpServlet {
+    private static final long serialVersionUID = 1L;
+    
+    // Hardcoded credentials for demo
+    private static final String VALID_USER = "admin";
+    private static final String VALID_PASS = "1234";
+
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) 
+            throws ServletException, IOException {
+        
+        String uName = request.getParameter("username");
+        String uPass = request.getParameter("password");
+
+        if (VALID_USER.equals(uName) && VALID_PASS.equals(uPass)) {
+            // SUCCESS: Create session and go to welcome page
+            HttpSession session = request.getSession();
+            session.setAttribute("username", uName);
+            response.sendRedirect("welcome.jsp");
+        } else {
+            // FAILURE: Send back to login with error message
+            request.setAttribute("error", "Invalid Credentials. Try again!");
+            RequestDispatcher rd = request.getRequestDispatcher("login.jsp");
+            rd.forward(request, response);
+        }
+    }
+    
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) 
+            throws ServletException, IOException {
+        response.sendRedirect("login.jsp");
+    }
+}
+
+
+welcome.jsp
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Welcome</title>
+</head>
+<body style="text-align: center; font-family: Arial; padding-top: 50px;">
+    <%
+        // Security Check: If no session, go back to login
+        if (session.getAttribute("username") == null) {
+            response.sendRedirect("login.jsp");
+            return;
+        }
+    %>
+    <h1>Welcome, ${username}!</h1>
+    <p>You have logged in successfully.</p>
+    <br>
+    <a href="logout" style="color: red;">Logout</a>
+</body>
+</html>
+
+
+LogoutServlet.java
+package com.demo;
+
+import java.io.IOException;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+
+@WebServlet("/logout")
+public class LogoutServlet extends HttpServlet {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) 
+            throws ServletException, IOException {
+        
+        HttpSession session = request.getSession(false);
+        if(session != null) {
+            session.invalidate();
+        }
+        response.sendRedirect("login.jsp");
+    }
+}
+
+
